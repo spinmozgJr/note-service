@@ -4,6 +4,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 	"github.com/spinmozgJr/note-service/internal/handlers"
+	"github.com/spinmozgJr/note-service/internal/httpx"
 	"github.com/spinmozgJr/note-service/internal/storage"
 	"log/slog"
 	"net/http"
@@ -23,9 +24,7 @@ func New(log *slog.Logger, storage storage.Storage, v *validator.Validate) http.
 		// TODO: возращать более подробные ошибки?
 		err := render.DecodeJSON(r.Body, &user)
 		if err != nil {
-			log.Error("failed to decode request body", "error", err.Error())
-
-			render.JSON(w, r, http.StatusBadRequest)
+			httpx.SendErrorJSON(w, r, http.StatusBadRequest, err)
 
 			return
 		}
@@ -33,11 +32,9 @@ func New(log *slog.Logger, storage storage.Storage, v *validator.Validate) http.
 		log.Info("request body decoded", slog.Any("request", user))
 
 		if err := v.Struct(user); err != nil {
-			//validateErr := err.(validator.ValidationErrors)
+			validateErr := err.(validator.ValidationErrors)
 
-			log.Error("invalid request", "error", err.Error())
-
-			render.JSON(w, r, http.StatusBadRequest)
+			httpx.SendErrorJSON(w, r, http.StatusBadRequest, validateErr)
 
 			return
 		}
