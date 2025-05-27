@@ -18,6 +18,6 @@ CREATE TABLE notes (
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE user;
-DROP TABLE note;
+DROP TABLE notes;
+DROP TABLE users;
 -- +goose StatementEnd

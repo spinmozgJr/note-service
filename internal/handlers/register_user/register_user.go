@@ -1,29 +1,24 @@
-package registerUser
+package register_user
 
 import (
-	"context"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
-	"github.com/spinmozgJr/note-service/internal/models"
+	"github.com/spinmozgJr/note-service/internal/handlers"
+	"github.com/spinmozgJr/note-service/internal/storage"
 	"log/slog"
 	"net/http"
-	"strings"
 )
 
-type RegisterUser interface {
-	AddUser(ctx context.Context, user models.User) error
-}
-
-func New(ctx context.Context, log *slog.Logger, registerUser RegisterUser) http.HandlerFunc {
+func New(log *slog.Logger, storage storage.Storage, v *validator.Validate) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "handlers.url.registerUser.New"
+		const op = "handlers.url.register_user.New"
 
 		log = log.With(
 			slog.String("op", op),
 			//slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
 
-		var user models.User
+		var user handlers.RegisterUserInput
 
 		// TODO: возращать более подробные ошибки?
 		err := render.DecodeJSON(r.Body, &user)
@@ -37,28 +32,21 @@ func New(ctx context.Context, log *slog.Logger, registerUser RegisterUser) http.
 
 		log.Info("request body decoded", slog.Any("request", user))
 
-		if err := validator.New().Struct(user); err != nil {
+		if err := v.Struct(user); err != nil {
 			//validateErr := err.(validator.ValidationErrors)
 
 			log.Error("invalid request", "error", err.Error())
 
-			// было бы неплохо как-то вернуть validateErr
 			render.JSON(w, r, http.StatusBadRequest)
 
 			return
 		}
 
-		err = registerUser.AddUser(ctx, user)
+		err = storage.AddUser(r.Context(), user)
 		if err != nil {
 			log.Error("failed to add user", "error", err)
 
 			render.JSON(w, r, http.StatusInternalServerError)
-
-			return
-		}
-
-		if strings.TrimSpace(user.Username) == "" {
-			render.JSON(w, r, http.StatusBadRequest)
 
 			return
 		}

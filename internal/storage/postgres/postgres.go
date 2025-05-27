@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/spinmozgJr/note-service/internal/config"
-	"github.com/spinmozgJr/note-service/internal/models"
+	"github.com/spinmozgJr/note-service/internal/handlers"
+	"github.com/spinmozgJr/note-service/internal/storage"
 	"time"
 )
 
@@ -13,7 +14,7 @@ type Storage struct {
 	conn *pgx.Conn
 }
 
-func New(ctx context.Context, pg config.Postgres) (*Storage, error) {
+func New(ctx context.Context, pg config.Postgres) (storage.Storage, error) {
 	const op = "storage.postgres.New"
 
 	connStr := getConnectionString(pg)
@@ -31,11 +32,15 @@ func New(ctx context.Context, pg config.Postgres) (*Storage, error) {
 	return &Storage{conn: conn}, nil
 }
 
-func (s *Storage) Close() {
-	s.conn.Close(context.Background())
+func (s *Storage) Close() error {
+	err := s.conn.Close(context.Background())
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (s *Storage) AddUser(ctx context.Context, user models.User) error {
+func (s *Storage) AddUser(ctx context.Context, user handlers.RegisterUserInput) error {
 	const op = "storage.postgres.AddUser"
 
 	query := `INSERT INTO users (username, created_at) VALUES ($1, $2)`
