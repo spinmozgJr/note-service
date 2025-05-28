@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/spinmozgJr/note-service/internal/config"
-	"github.com/spinmozgJr/note-service/internal/handlers"
 	"github.com/spinmozgJr/note-service/internal/storage"
 	"time"
 )
@@ -40,13 +39,14 @@ func (s *Storage) Close() error {
 	return nil
 }
 
-func (s *Storage) AddUser(ctx context.Context, user handlers.RegisterUserInput) error {
+func (s *Storage) AddUser(ctx context.Context, user, hashPass string) (int, error) {
 	const op = "storage.postgres.AddUser"
 
-	query := `INSERT INTO users (username, created_at) VALUES ($1, $2)`
+	query := `INSERT INTO users (username, password, created_at) VALUES ($1, $2, $3) RETURNING id`
 
-	_, err := s.conn.Exec(ctx, query, user.Username, time.Now())
-	return err
+	userId := 0
+	err := s.conn.QueryRow(ctx, query, user, hashPass, time.Now()).Scan(&userId)
+	return userId, err
 }
 
 func getConnectionString(p config.Postgres) string {

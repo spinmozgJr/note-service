@@ -10,8 +10,10 @@ import (
 type Config struct {
 	Env string `yaml:"env" env-default:"local"`
 	//StoragePath string `yaml:"storage_path" env-required:"true"`
-	HTTPServer `yaml:"http_server"`
-	Postgres   `yaml:"postgres"`
+	HTTPServer     `yaml:"http_server"`
+	Postgres       `yaml:"postgres"`
+	JwtTTLDuration time.Duration `yaml:"jwt_ttl_duration"`
+	SigningKey     string        `yaml:"signing_key"`
 }
 
 type HTTPServer struct {

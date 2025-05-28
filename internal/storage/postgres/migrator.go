@@ -9,7 +9,7 @@ import (
 )
 
 // принимает config.Postgres, так как pgx открывает connection, а для миграций нужна db
-func MigrateDB(pg config.Postgres) error {
+func MigrateDB(pg config.Postgres) (err error) {
 	migrationsDir := "internal/storage/migrations/"
 
 	pgxConfig, err := pgx.ParseConfig(getConnectionString(pg))
@@ -18,7 +18,12 @@ func MigrateDB(pg config.Postgres) error {
 	}
 
 	db := stdlib.OpenDB(*pgxConfig)
-	defer db.Close()
+	defer func() {
+		closeErr := db.Close()
+		if err == nil && closeErr != nil { // Если основной err ещё не установлен
+			err = fmt.Errorf("failed to close DB: %w", closeErr)
+		}
+	}()
 
 	if err := goose.SetDialect("postgres"); err != nil {
 		return err

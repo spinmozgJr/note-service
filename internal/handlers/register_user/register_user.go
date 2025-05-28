@@ -2,52 +2,41 @@ package register_user
 
 import (
 	"github.com/go-chi/render"
-	"github.com/go-playground/validator/v10"
+	"github.com/spinmozgJr/note-service/internal/dependencies"
 	"github.com/spinmozgJr/note-service/internal/handlers"
 	"github.com/spinmozgJr/note-service/internal/httpx"
-	"github.com/spinmozgJr/note-service/internal/storage"
 	"log/slog"
 	"net/http"
 )
 
-func New(log *slog.Logger, storage storage.Storage, v *validator.Validate) http.HandlerFunc {
+func New(deps *dependencies.Dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.url.register_user.New"
 
-		log = log.With(
+		deps.Log = deps.Log.With(
 			slog.String("op", op),
 			//slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
 
-		var user handlers.RegisterUserInput
-
-		// TODO: возращать более подробные ошибки?
-		err := render.DecodeJSON(r.Body, &user)
-		if err != nil {
-			httpx.SendErrorJSON(w, r, http.StatusBadRequest, err)
-
+		var signIn handlers.SignInRequest
+		if err := httpx.DecodeAndValidateBody(w, r, deps, &signIn); err != nil {
 			return
 		}
 
-		log.Info("request body decoded", slog.Any("request", user))
-
-		if err := v.Struct(user); err != nil {
-			validateErr := err.(validator.ValidationErrors)
-
-			httpx.SendErrorJSON(w, r, http.StatusBadRequest, validateErr)
-
-			return
+		input := handlers.SignInRequest{
+			Username: signIn.Username,
+			Password: signIn.Password,
 		}
 
-		err = storage.AddUser(r.Context(), user)
+		response, err := deps.UserService.SignIn(r.Context(), input)
 		if err != nil {
-			log.Error("failed to add user", "error", err)
+			deps.Log.Error("failed to add user", "error", err)
 
 			render.JSON(w, r, http.StatusInternalServerError)
 
 			return
 		}
 
-		render.JSON(w, r, http.StatusCreated)
+		render.JSON(w, r, response)
 	}
 }
