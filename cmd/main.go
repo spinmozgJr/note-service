@@ -7,7 +7,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/spinmozgJr/note-service/internal/config"
 	"github.com/spinmozgJr/note-service/internal/dependencies"
-	"github.com/spinmozgJr/note-service/internal/handlers/register_user"
+	"github.com/spinmozgJr/note-service/internal/handlers"
 	mwLogger "github.com/spinmozgJr/note-service/internal/middleware"
 	"github.com/spinmozgJr/note-service/internal/service"
 	"github.com/spinmozgJr/note-service/internal/storage/postgres"
@@ -59,7 +59,8 @@ func main() {
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
 
-	router.Post("/users", register_user.New(deps))
+	router.Post("/users", handlers.Registration(deps))
+	router.Post("/login", handlers.Login(deps))
 
 	log.Info("starting server", slog.String("address", cfg.Address))
 

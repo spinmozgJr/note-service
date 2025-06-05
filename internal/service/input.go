@@ -1,6 +1,6 @@
 package service
 
-type RegisterUserInput struct {
+type UserInput struct {
 	Username string `json:"username" validate:"required"`
 	Password string `json:"password" validate:"required"`
 }

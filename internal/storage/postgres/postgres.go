@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/spinmozgJr/note-service/internal/config"
+	"github.com/spinmozgJr/note-service/internal/models"
 	"github.com/spinmozgJr/note-service/internal/storage"
 	"time"
 )
@@ -49,7 +50,40 @@ func (s *Storage) AddUser(ctx context.Context, user, hashPass string) (int, erro
 	return userId, err
 }
 
+func (s *Storage) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
+	const op = "storage.postgres.GetUserByUserName"
+
+	var user *models.User
+
+	query := `
+				SELECT id, username, password FROM users
+				WHERE username = $1;
+	`
+
+	row := s.conn.QueryRow(ctx, query, username)
+	user, err := scanUserRow(row)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
+}
+
 func getConnectionString(p config.Postgres) string {
 	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		p.Host, p.Port, p.User, p.Password, p.DBName, p.SSLMode)
+}
+
+func scanUserRow(row pgx.Row) (*models.User, error) {
+	var user models.User
+
+	if err := row.Scan(
+		&user.ID,
+		&user.Username,
+		&user.PasswordHash,
+	); err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }

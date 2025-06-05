@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"github.com/spinmozgJr/note-service/internal/config"
-	"github.com/spinmozgJr/note-service/internal/handlers"
 	"github.com/spinmozgJr/note-service/internal/models"
 	"github.com/spinmozgJr/note-service/internal/storage"
 	"github.com/spinmozgJr/note-service/pkg/auth"
@@ -27,7 +26,7 @@ func NewUserService(userRepository storage.Storage, manager auth.TokenManager, c
 }
 
 func (s *UserService) SignIn(ctx context.Context,
-	input handlers.SignInRequest) (*models.BaseResponse[models.AuthData], error) {
+	input UserInput) (*models.BaseResponse[models.AuthData], error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
@@ -49,24 +48,24 @@ func (s *UserService) SignIn(ctx context.Context,
 	return response, nil
 }
 
-//func (s *UserService) Login(ctx context.Context, input SignIn) (*model.BaseResponse[model.AuthData], error) {
-//	user, err := s.UserRepository.GetUserByUsername(ctx, input.Username)
-//	if err != nil {
-//		return nil, err
-//	}
-//	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(input.Password))
-//	if err != nil {
-//		return nil, err
-//	}
-//	jwt, err := s.TokenManager.NewJWT(strconv.Itoa(user.ID), s.Config.JwtTTLDuration)
-//	if err != nil {
-//		return nil, err
-//	}
-//	response := &models.BaseResponse[models.AuthData]{
-//		Data: &models.AuthData{
-//			Username:    strings.ToLower(input.Username),
-//			AccessToken: jwt,
-//		},
-//	}
-//	return response, nil
-//}
+func (s *UserService) Login(ctx context.Context, input UserInput) (*models.BaseResponse[models.AuthData], error) {
+	user, err := s.UserRepository.GetUserByUsername(ctx, input.Username)
+	if err != nil {
+		return nil, err
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(input.Password))
+	if err != nil {
+		return nil, err
+	}
+	jwt, err := s.TokenManager.NewJWT(strconv.Itoa(user.ID), s.Config.JwtTTLDuration)
+	if err != nil {
+		return nil, err
+	}
+	response := &models.BaseResponse[models.AuthData]{
+		Data: &models.AuthData{
+			Username:    strings.ToLower(input.Username),
+			AccessToken: jwt,
+		},
+	}
+	return response, nil
+}
