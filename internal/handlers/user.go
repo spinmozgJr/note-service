@@ -15,7 +15,7 @@ func Registration(deps *dependencies.Dependencies) http.HandlerFunc {
 
 		deps.Log = deps.Log.With(
 			slog.String("op", op),
-			//slog.String("request_id", middleware.GetReqID(r.Context())),
+			//slog.String("request_id", middlewares.GetReqID(r.Context())),
 		)
 
 		var signIn SignInRequest
@@ -32,7 +32,8 @@ func Registration(deps *dependencies.Dependencies) http.HandlerFunc {
 		if err != nil {
 			deps.Log.Error("failed to add user", "error", err)
 
-			render.JSON(w, r, http.StatusInternalServerError)
+			//render.JSON(w, r, http.StatusInternalServerError)
+			httpx.SendErrorJSON(w, r, http.StatusInternalServerError, err)
 
 			return
 		}
@@ -47,7 +48,7 @@ func Login(deps *dependencies.Dependencies) http.HandlerFunc {
 
 		deps.Log = deps.Log.With(
 			slog.String("op", op),
-			//slog.String("request_id", middleware.GetReqID(r.Context())),
+			//slog.String("request_id", middlewares.GetReqID(r.Context())),
 		)
 
 		var signIn SignInRequest
@@ -64,7 +65,8 @@ func Login(deps *dependencies.Dependencies) http.HandlerFunc {
 		if err != nil {
 			deps.Log.Error("failed to login user", "error", err)
 
-			render.JSON(w, r, http.StatusInternalServerError)
+			//render.JSON(w, r, http.StatusInternalServerError)
+			httpx.SendErrorJSON(w, r, http.StatusInternalServerError, err)
 
 			return
 		}

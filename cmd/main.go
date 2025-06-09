@@ -8,7 +8,7 @@ import (
 	"github.com/spinmozgJr/note-service/internal/config"
 	"github.com/spinmozgJr/note-service/internal/dependencies"
 	"github.com/spinmozgJr/note-service/internal/handlers"
-	mwLogger "github.com/spinmozgJr/note-service/internal/middleware"
+	mw "github.com/spinmozgJr/note-service/internal/middlewares"
 	"github.com/spinmozgJr/note-service/internal/service"
 	"github.com/spinmozgJr/note-service/internal/storage/postgres"
 	"github.com/spinmozgJr/note-service/pkg/auth"
@@ -27,13 +27,13 @@ func main() {
 	log.Debug("debug messages are enabled")
 
 	ctx := context.Background()
-	storage, err := postgres.New(ctx, cfg.Postgres)
+	connector, err := postgres.NewDBConnector(ctx, cfg.Postgres)
 	if err != nil {
-		slog.Error("failed to init storage", "error", err)
+		slog.Error("failed to init connector", "error", err)
 		os.Exit(1)
 	}
 	defer func() {
-		if err := storage.Close(); err != nil {
+		if err := connector.Close(); err != nil {
 			log.Info("close error: %w", err)
 		}
 	}()
@@ -49,18 +49,31 @@ func main() {
 	if err != nil {
 		slog.Error("failed to init token manager", "error", err)
 	}
-	userService := service.NewUserService(storage, tokenManager, cfg)
 
-	deps := dependencies.New(v, log, userService)
+	userStorage := postgres.NewUserStorage(connector)
+	userService := service.NewUserService(userStorage, tokenManager, cfg)
+
+	noteStorage := postgres.NewNoteStorage(connector)
+	noteService := service.NewNoteService(noteStorage)
+
+	deps := dependencies.New(v, log, userService, noteService, tokenManager)
 
 	router := chi.NewRouter()
 
-	router.Use(mwLogger.NewLoggerMiddleware(log))
+	router.Use(mw.NewLoggerMiddleware(log))
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
 
-	router.Post("/users", handlers.Registration(deps))
-	router.Post("/login", handlers.Login(deps))
+	router.Route("/", func(r chi.Router) {
+		//r.Post("/sign-in", h.PostSignIn)
+		//r.Post("/login", h.PostLogin)
+		router.Post("/users", handlers.Registration(deps))
+		router.Post("/login", handlers.Login(deps))
+	})
+
+	router.With(mw.JwtAuthMiddleware(deps)).Group(func(r chi.Router) {
+		r.Post("/users/{id}/notes", handlers.CreateNote(deps))
+	})
 
 	log.Info("starting server", slog.String("address", cfg.Address))
 

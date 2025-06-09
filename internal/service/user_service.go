@@ -12,12 +12,12 @@ import (
 )
 
 type UserService struct {
-	UserRepository storage.Storage
+	UserRepository storage.UserStorage
 	TokenManager   auth.TokenManager
 	Config         *config.Config
 }
 
-func NewUserService(userRepository storage.Storage, manager auth.TokenManager, config *config.Config) UserService {
+func NewUserService(userRepository storage.UserStorage, manager auth.TokenManager, config *config.Config) UserService {
 	return UserService{
 		UserRepository: userRepository,
 		TokenManager:   manager,

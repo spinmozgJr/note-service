@@ -1,6 +1,12 @@
 package service
 
 type UserInput struct {
-	Username string `json:"username" validate:"required"`
-	Password string `json:"password" validate:"required"`
+	Username string
+	Password string
+}
+
+type NoteInput struct {
+	UserID  int
+	Title   string
+	Content string
 }
