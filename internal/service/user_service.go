@@ -26,7 +26,7 @@ func NewUserService(userRepository storage.UserStorage, manager auth.TokenManage
 }
 
 func (s *UserService) SignIn(ctx context.Context,
-	input UserInput) (*models.BaseResponse[models.AuthData], error) {
+	input UserInput) (*models.AuthResponse, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func (s *UserService) SignIn(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	response := &models.BaseResponse[models.AuthData]{
+	response := &models.AuthResponse{
 		Data: &models.AuthData{
 			Username:    strings.ToLower(input.Username),
 			AccessToken: jwt,
@@ -48,7 +48,7 @@ func (s *UserService) SignIn(ctx context.Context,
 	return response, nil
 }
 
-func (s *UserService) Login(ctx context.Context, input UserInput) (*models.BaseResponse[models.AuthData], error) {
+func (s *UserService) Login(ctx context.Context, input UserInput) (*models.AuthResponse, error) {
 	user, err := s.UserRepository.GetUserByUsername(ctx, input.Username)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func (s *UserService) Login(ctx context.Context, input UserInput) (*models.BaseR
 	if err != nil {
 		return nil, err
 	}
-	response := &models.BaseResponse[models.AuthData]{
+	response := &models.AuthResponse{
 		Data: &models.AuthData{
 			Username:    strings.ToLower(input.Username),
 			AccessToken: jwt,
