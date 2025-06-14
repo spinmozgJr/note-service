@@ -10,3 +10,10 @@ type UpdateNote struct {
 	Title   string
 	Content string
 }
+
+type InputGetAllNotes struct {
+	UserID int
+	Limit  int
+	Offset int
+	Sort   string
+}

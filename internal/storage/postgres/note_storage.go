@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/spinmozgJr/note-service/internal/models"
 	"github.com/spinmozgJr/note-service/internal/storage"
@@ -45,6 +46,26 @@ func (s *NoteStorage) DeleteNoteByID(ctx context.Context, noteID int) error {
 	}
 
 	return nil
+}
+
+func (s *NoteStorage) GetAllNotes(ctx context.Context, input *storage.InputGetAllNotes) ([]models.NoteDB, error) {
+	query := fmt.Sprintf(`
+        SELECT id, user_id, title, content, created_at, updated_at 
+        FROM notes
+        WHERE user_id = $1
+        ORDER BY created_at %s
+        LIMIT $2
+        OFFSET $3`, input.Sort)
+
+	rows, err := s.Conn.Query(ctx, query, input.UserID, input.Limit, input.Offset)
+	if err != nil {
+		return nil, ErrSelect
+	}
+	tasks, err := scanNoteListRow(rows)
+	if err != nil {
+		return nil, ErrSelect
+	}
+	return tasks, nil
 }
 
 func (s *NoteStorage) GetNoteByID(ctx context.Context, noteId int) (*models.NoteDB, error) {
@@ -101,4 +122,25 @@ func scanNoteRow(row pgx.Row) (*models.NoteDB, error) {
 	}
 
 	return &note, nil
+}
+
+func scanNoteListRow(rows pgx.Rows) ([]models.NoteDB, error) {
+	var items []models.NoteDB
+	for rows.Next() {
+		var task models.NoteDB
+
+		err := rows.Scan(
+			&task.ID,
+			&task.UserID,
+			&task.Title,
+			&task.Content,
+			&task.CreatedAt,
+			&task.UpdateAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, task)
+	}
+	return items, nil
 }

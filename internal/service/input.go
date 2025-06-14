@@ -17,3 +17,10 @@ type UpdateNote struct {
 	Title   string
 	Content string
 }
+
+type ServiceQueryParams struct {
+	ID     int
+	Limit  int
+	Offset int
+	Sort   string
+}

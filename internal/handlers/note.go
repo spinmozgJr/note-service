@@ -93,30 +93,45 @@ func DeleteNote(deps *dependencies.Dependencies) http.HandlerFunc {
 	}
 }
 
-//func GetAllNotes(deps *dependencies.Dependencies) http.HandlerFunc {
-//	return func(w http.ResponseWriter, r *http.Request) {
-//		const op = "handlers.note.GetAllNotes"
-//
-//		deps.Log = deps.Log.With(
-//			slog.String("op", op),
-//		)
-//
-//		ctx := r.Context()
-//		userId, err := auth.GetUserIDFromRequest(r)
-//		if err != nil {
-//			deps.Log.Error("пользователь не авторизован", "error", err)
-//			httpx.SendErrorJSON(w, r, http.StatusUnauthorized, errors.New("пользователь не авторизован"))
-//			return
-//		}
-//		response, err := deps.NoteService.GetAllNotes(ctx, userId)
-//		if err != nil {
-//			httpx.SendErrorJSON(w, r, http.StatusInternalServerError, err)
-//			return
-//		}
-//
-//		render.JSON(w, r, response)
-//	}
-//}
+func GetAllNotes(deps *dependencies.Dependencies) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "handlers.note.GetAllNotes"
+
+		deps.Log = deps.Log.With(
+			slog.String("op", op),
+		)
+
+		ctx := r.Context()
+		userID, err := auth.GetUserIDFromRequest(r)
+		if err != nil {
+			deps.Log.Error("пользователь не авторизован", "error", err)
+			httpx.SendErrorJSON(w, r, http.StatusUnauthorized, errors.New("пользователь не авторизован"))
+			return
+		}
+
+		params, err := getQueryParams(r)
+		if err != nil {
+			deps.Log.Error("некорректные параметры запроса", "error", err)
+			httpx.SendErrorJSON(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		serviceQueryParams := &service.ServiceQueryParams{
+			ID:     userID,
+			Limit:  params.Limit,
+			Offset: params.Offset,
+			Sort:   params.Sort,
+		}
+
+		response, err := deps.NoteService.GetAllNotes(ctx, serviceQueryParams)
+		if err != nil {
+			httpx.SendErrorJSON(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		render.JSON(w, r, response)
+	}
+}
 
 func GetNoteByID(deps *dependencies.Dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -204,4 +219,50 @@ func UpdateNote(deps *dependencies.Dependencies) http.HandlerFunc {
 		}
 		render.JSON(w, r, response)
 	}
+}
+
+func getQueryParams(r *http.Request) (*QueryParams, error) {
+	var params QueryParams
+
+	var limit int
+	var err error
+	limitStr := r.URL.Query().Get("limit")
+	if limitStr == "" {
+		limit = 10
+	} else {
+		limit, err = strconv.Atoi(limitStr)
+
+		if err != nil {
+			return nil, err
+		}
+	}
+	params.Limit = limit
+
+	var offset int
+	offsetStr := r.URL.Query().Get("offset")
+	if offsetStr == "" {
+		offset = 0
+	} else {
+		offset, err = strconv.Atoi(offsetStr)
+
+		if err != nil {
+			return nil, err
+		}
+	}
+	params.Offset = offset
+
+	sort := r.URL.Query().Get("offset")
+	switch sort {
+	case "":
+		sort = "asc"
+	case "desc":
+	case "asc":
+		break
+	default:
+		return nil, errors.New("Неправильный параметр сортировки")
+	}
+
+	params.Sort = sort
+
+	return &params, nil
 }

@@ -74,7 +74,7 @@ func main() {
 	router.With(mw.JwtAuthMiddleware(deps)).Group(func(r chi.Router) {
 		r.Post("/users/{id}/notes", handlers.CreateNote(deps))
 		r.Get("/users/{id}/notes/{note_id}", handlers.GetNoteByID(deps))
-		//r.Get("/users/{id}/notes", handlers.GetAllNotes(deps))
+		r.Get("/users/{id}/notes", handlers.GetAllNotes(deps))
 		r.Put("/users/{id}/notes/{note_id}", handlers.UpdateNote(deps))
 		r.Delete("/users/{id}/notes/{note_id}", handlers.DeleteNote(deps))
 	})

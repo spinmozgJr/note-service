@@ -11,8 +11,8 @@ type InputNote struct {
 }
 
 type QueryParams struct {
-	Limit  string
-	Offset string
+	Limit  int
+	Offset int
 	Sort   string
 }
 

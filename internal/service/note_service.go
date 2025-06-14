@@ -71,12 +71,25 @@ func (s *NoteService) DeleteNote(ctx context.Context, userID, noteID int) (*mode
 	return &models.OperationResultResponse{Data: &models.OperationResultData{Success: true}}, nil
 }
 
-//func (s *NoteService) GetAllNotes(ctx context.Context, noteID int) (*models.NoteResponse, error) {
-//	notes, err := s.NoteRepository.GetAllNotes(ctx, noteId)
-//	if err != nil {
-//		return nil, err
-//	}
-//}
+func (s *NoteService) GetAllNotes(ctx context.Context, params *ServiceQueryParams) (*models.NoteListResponse, error) {
+	getAllNotesParams := &storage.InputGetAllNotes{
+		UserID: params.ID,
+		Limit:  params.Limit,
+		Offset: params.Offset,
+		Sort:   params.Sort,
+	}
+	notes, err := s.NoteRepository.GetAllNotes(ctx, getAllNotesParams)
+	if err != nil {
+		return nil, err
+	}
+
+	taskDTOs := make([]models.NoteDTO, len(notes))
+	for i, e := range notes {
+		taskDTOs[i] = mapper.MapNoteDTOFromTaskDb(e)
+	}
+
+	return &models.NoteListResponse{Data: &taskDTOs}, nil
+}
 
 func (s *NoteService) GetNoteByID(ctx context.Context, userId, noteId int) (*models.NoteResponse, error) {
 	note, err := s.NoteRepository.GetNoteByID(ctx, noteId)
